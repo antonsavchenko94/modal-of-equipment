@@ -22,6 +22,25 @@
   font-size: large;
 }
 
+hr {
+  border: none;
+  height: 1px;
+  background-color: #333;
+}
+
+.row {
+  height: 200px;
+  width: 100%;
+  border-top: 4px solid #00ccff;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.col {
+  float: left;
+  width: 33%;
+}
+
 @keyframes App-logo-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
