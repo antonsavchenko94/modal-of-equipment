@@ -21,108 +21,129 @@ class ModalWindow extends Component {
     renderTypesTree = () => {
         const {types, models} = this.state;
         if (types && models) {
-            const {filter} = this.props;
+            const {filter = []} = this.props;
             const typesArr = [];
-            if (filter && filter.length) {
-                filter.forEach(paramObj => {
-                    if (paramObj.hasOwnProperty(VEHICLE_TYPE_ID)) {
-                        typesArr.push(this.getTypeTree(paramObj[VEHICLE_TYPE_ID]));
-                    }
-                });
-                return typesArr;
+            let isFiltered = false;
+            filter.forEach(paramObj => {
+                if (paramObj.hasOwnProperty(VEHICLE_TYPE_ID)) {
+                    typesArr.push(this.getTypeTree(paramObj[VEHICLE_TYPE_ID]));
+                    isFiltered = true;
+                }
+            });
+            if (!isFiltered) {
+                return this.getTypeTree()
             }
+            return typesArr;
         }
     };
 
     renderModelsTree = () => {
         const {models} = this.state;
         if (models) {
-            const {filter} = this.props;
+            const {filter = []} = this.props;
             const modelsArr = [];
-            if (filter && filter.length) {
-                filter.forEach(paramObj => {
-                    if (paramObj.hasOwnProperty(VEHICLE_MODEL_ID)) {
-                        modelsArr.push(this.getModelTree(paramObj[VEHICLE_MODEL_ID]));
-                    }
-                });
-                return modelsArr;
+            let isFiltered = false;
+            filter.forEach(paramObj => {
+                if (paramObj.hasOwnProperty(VEHICLE_MODEL_ID)) {
+                    modelsArr.push(this.getModelTree(paramObj[VEHICLE_MODEL_ID]));
+                    isFiltered = true;
+                }
+            });
+            if (!isFiltered) {
+                return this.getModelTree()
             }
+            return modelsArr;
         }
     };
 
     renderVehiclesTree = () => {
         const {vehicles} = this.state;
         if (vehicles) {
-            const {filter} = this.props;
+            const {filter = []} = this.props;
             const vehiclesArr = [];
-            if (filter && filter.length) {
-                filter.forEach(paramObj => {
-                    if (paramObj.hasOwnProperty(VEHICLE_ID)) {
-                        vehiclesArr.push(this.getVehicleTree(paramObj[VEHICLE_ID]));
-                    }
-                });
-                return vehiclesArr;
+            let isFiltered = false;
+            filter.forEach(paramObj => {
+                if (paramObj.hasOwnProperty(VEHICLE_ID)) {
+                    vehiclesArr.push(this.getVehicleTree(paramObj[VEHICLE_ID]));
+                    isFiltered = true;
+                }
+            });
+            if (!isFiltered) {
+                return this.getVehicleTree()
             }
+            return vehiclesArr;
         }
     };
 
     getTypeTree = id => {
         const {types, models} = this.state;
-        const modelItems = [];
-        const singleType = types.find(item => item.id === id);
-        models.forEach((model, index) => {
-            const {vehicleType} = model;
-            if (vehicleType && vehicleType.id === id) {
-                const vehicleItems = model.vehicles.map(vehicle => <li key={vehicle.id}>{vehicle.name}</li>);
-                const modelItemKey = singleType.id + model.id + model.name;
-                const modelItem = (
-                    <ul key={modelItemKey}>
-                        <li>Model: {model.name}</li>
-                        <li>Vehicles:</li>
-                        <ul>
-                            {vehicleItems.length ? vehicleItems : 'NOT EXIST'}
+        const typesForRendering = id ? types.filter(item => item.id === id) : types;
+        const typesTree = typesForRendering.map(item => {
+            const modelItems = [];
+            models.forEach((model, index) => {
+                const {vehicleType} = model;
+                if (vehicleType && vehicleType.id === item.id) {
+                    const vehicleItems = model.vehicles.map(vehicle => <li key={vehicle.id}>{vehicle.name}</li>);
+                    const modelItemKey = item.id + model.id + model.name;
+                    const modelItem = (
+                        <ul key={modelItemKey}>
+                            <li>Model: {model.name}</li>
+                            <li>Vehicles:</li>
+                            <ul>
+                                {vehicleItems.length ? vehicleItems : 'NOT EXIST'}
+                            </ul>
                         </ul>
-                    </ul>
-                );
-                const hr = <hr key={modelItemKey + index}/>;
-                modelItems.push(modelItem, hr);
-            }
+                    );
+                    const hr = <hr key={modelItemKey + index}/>;
+                    modelItems.push(modelItem, hr);
+                }
+            });
+            return (
+                <ul key={item.id + item.name}>
+                    <li>Type: {item.name}</li>
+                    <li>Models</li>
+                    {modelItems}
+                </ul>);
         });
-        return (
-            <ul key={singleType.id + singleType.name}>
-                <li>Type: {singleType.name}</li>
-                <li>Models:</li>
-                {modelItems}
-            </ul>);
+        return typesTree;
+
     };
 
     getModelTree = id => {
         const {models} = this.state;
-        const model = models.find(item => item.id === id);
-        const vehicleItems = model.vehicles.map(vehicle => <li key={model.name + vehicle.name}>{vehicle.name}</li>);
-        const {vehicleType} = model;
+        const modelsForRendering = id ? models.filter(item => item.id === id) : models;
+        const modelsTree = modelsForRendering.map(model => {
+            const vehicleItems = model.vehicles.map(vehicle => <li key={model.name + vehicle.name}>{vehicle.name}</li>);
+            const {vehicleType} = model;
 
-        return (
-            <ul key={model.id + model.name}>
-                <li>Model: {model.name}</li>
-                <li>Type: {vehicleType.name}</li>
-                <li>Vehicles:</li>
-                <ul>{vehicleItems}</ul>
-            </ul>);
+            return (
+                <ul key={model.id + model.name}>
+                    <li>Model: {model.name}</li>
+                    <li>Type: {vehicleType.name}</li>
+                    <li>Vehicles:</li>
+                    <ul>{vehicleItems}</ul>
+                </ul>);
+        });
+        return modelsTree;
+
     };
 
     getVehicleTree = id => {
         const {vehicles} = this.state;
-        const vehicle = vehicles.find(item => item.id === id);
-        const {vehicleModel} = vehicle;
-        const {vehicleType} = vehicleModel;
+        const vehiclesForRendering = id ? vehicles.filter(item => item.id === id) : vehicles;
+        const vehiclesTree = vehiclesForRendering.map(vehicle => {
+            const {vehicleModel} = vehicle;
+            const {vehicleType} = vehicleModel;
 
-        return (
-            <ul key={vehicle.id + vehicle.name}>
-                <li>Vehicle name: {vehicle.name}</li>
-                <li>Type: {vehicleType.name}</li>
-                <li>Model: {vehicleModel.name}</li>
-            </ul>);
+            return (
+                <ul key={vehicle.id + vehicle.name}>
+                    <li>Vehicle name: {vehicle.name}</li>
+                    <li>Type: {vehicleType.name}</li>
+                    <li>Model: {vehicleModel.name}</li>
+                </ul>);
+        });
+
+        return vehiclesTree;
     };
 
 
@@ -136,7 +157,6 @@ class ModalWindow extends Component {
                     contentLabel="Equipment"
                     onRequestClose={this.closeModal}
                 >
-
                     <div className="row">
                         <div className="col">
                             <h3>Types</h3>
