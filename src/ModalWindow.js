@@ -3,9 +3,9 @@ import Modal from 'react-modal';
 import {MODELS_URL, TYPES_URL, VEHICLES_URL, VEHICLE_ID, VEHICLE_MODEL_ID, VEHICLE_TYPE_ID} from './constants'
 
 class ModalWindow extends Component {
-    constructor() {
+    constructor(props) {
         super();
-        this.state = {isModalOpen: false};
+        this.state = {isModalOpen: false, searchValue: '', filter: props.filter || []};
     }
 
     componentDidMount() {
@@ -14,14 +14,23 @@ class ModalWindow extends Component {
         fetch(VEHICLES_URL).then(response => response.json()).then(data => this.setState({vehicles: data}));
     }
 
+    componentWillReceiveProps(nextProps) {
+        if (JSON.stringify(this.state.filter) !== JSON.stringify(nextProps.filter)) {
+            this.setState({filter: nextProps.filter || []});
+        }
+    }
+
     openModal = () => this.setState({isModalOpen: true});
 
     closeModal = () => this.setState({isModalOpen: false});
 
+    onSearch = ({ currentTarget }) => {
+        this.setState({ searchValue: currentTarget.value.trim(), filter: [] });
+    }
+
     renderTypesTree = () => {
-        const {types, models} = this.state;
+        const {types, models, filter} = this.state;
         if (types && models) {
-            const {filter = []} = this.props;
             const typesArr = [];
             let isFiltered = false;
             filter.forEach(paramObj => {
@@ -38,9 +47,8 @@ class ModalWindow extends Component {
     };
 
     renderModelsTree = () => {
-        const {models} = this.state;
+        const {models, filter} = this.state;
         if (models) {
-            const {filter = []} = this.props;
             const modelsArr = [];
             let isFiltered = false;
             filter.forEach(paramObj => {
@@ -57,9 +65,8 @@ class ModalWindow extends Component {
     };
 
     renderVehiclesTree = () => {
-        const {vehicles} = this.state;
+        const {vehicles, filter} = this.state;
         if (vehicles) {
-            const {filter = []} = this.props;
             const vehiclesArr = [];
             let isFiltered = false;
             filter.forEach(paramObj => {
@@ -76,13 +83,20 @@ class ModalWindow extends Component {
     };
 
     getTypeTree = id => {
-        const {types, models} = this.state;
-        const typesForRendering = id ? types.filter(item => item.id === id) : types;
+        const {types, models, searchValue} = this.state;
+        let typesForRendering = [];
+        if(!searchValue) {
+            typesForRendering = id ? types.filter(item => item.id === id) : types;
+        }
+        else {
+            typesForRendering = types.filter(item => item.name.includes(searchValue));
+        }
+
         const typesTree = typesForRendering.map(item => {
             const modelItems = [];
             models.forEach((model, index) => {
                 const {vehicleType} = model;
-                if (vehicleType && vehicleType.id === item.id) {
+                if (vehicleType && vehicleType.id === item.id && !searchValue) {
                     const vehicleItems = model.vehicles.map(vehicle => <li key={vehicle.id}>{vehicle.name}</li>);
                     const modelItemKey = item.id + model.id + model.name;
                     const modelItem = (
@@ -99,7 +113,7 @@ class ModalWindow extends Component {
                 }
             });
             return (
-                <ul key={item.id + item.name}>
+                <ul key={item.id + item.name} className="root-list">
                     <li>Type: {item.name}</li>
                     <li>Models</li>
                     {modelItems}
@@ -110,18 +124,25 @@ class ModalWindow extends Component {
     };
 
     getModelTree = id => {
-        const {models} = this.state;
-        const modelsForRendering = id ? models.filter(item => item.id === id) : models;
+        const {models, searchValue} = this.state;
+        let modelsForRendering = [];
+        if(!searchValue) {
+            modelsForRendering = id ? models.filter(item => item.id === id) : models;
+        }
+        else {
+            modelsForRendering = models.filter(item => item.name.includes(searchValue));
+        }
         const modelsTree = modelsForRendering.map(model => {
             const vehicleItems = model.vehicles.map(vehicle => <li key={model.name + vehicle.name}>{vehicle.name}</li>);
             const {vehicleType} = model;
 
             return (
-                <ul key={model.id + model.name}>
+                <ul key={model.id + model.name} className="root-list">
                     <li>Model: {model.name}</li>
                     <li>Type: {vehicleType.name}</li>
                     <li>Vehicles:</li>
                     <ul>{vehicleItems}</ul>
+                    <hr/>
                 </ul>);
         });
         return modelsTree;
@@ -129,17 +150,24 @@ class ModalWindow extends Component {
     };
 
     getVehicleTree = id => {
-        const {vehicles} = this.state;
-        const vehiclesForRendering = id ? vehicles.filter(item => item.id === id) : vehicles;
+        const {vehicles, searchValue} = this.state;
+        let vehiclesForRendering = [];
+        if(!searchValue) {
+            vehiclesForRendering = id ? vehicles.filter(item => item.id === id) : vehicles;
+        }
+        else {
+            vehiclesForRendering = vehicles.filter(item => item.name.includes(searchValue));
+        }
         const vehiclesTree = vehiclesForRendering.map(vehicle => {
             const {vehicleModel} = vehicle;
             const {vehicleType} = vehicleModel;
 
             return (
-                <ul key={vehicle.id + vehicle.name}>
+                <ul key={vehicle.id + vehicle.name} className="root-list">
                     <li>Vehicle name: {vehicle.name}</li>
                     <li>Type: {vehicleType.name}</li>
                     <li>Model: {vehicleModel.name}</li>
+                    <hr/>
                 </ul>);
         });
 
@@ -148,15 +176,18 @@ class ModalWindow extends Component {
 
 
     render() {
-        const {isModalOpen} = this.state;
+        const {isModalOpen, searchValue} = this.state;
         return (
-            <div>
+            <div className="modal">
                 <button onClick={this.openModal}>Open modal</button>
                 <Modal
                     isOpen={isModalOpen}
                     contentLabel="Equipment"
                     onRequestClose={this.closeModal}
                 >
+                    <form>
+                        <input className="search" type="search" value={searchValue} onChange={this.onSearch} placeholder="Search.." />
+                    </form>
                     <div className="row">
                         <div className="col">
                             <h3>Types</h3>
