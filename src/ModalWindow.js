@@ -25,6 +25,15 @@ class ModalWindow extends Component {
 
     closeModal = () => this.setState({isModalOpen: false});
 
+    getUniqueDOM = (arr) => {
+        return arr.reduce((unique, o) => {
+            if(!unique.find(obj => obj.key === o.key)) {
+                unique.push(o);
+            }
+            return unique;
+        },[]);
+    }
+
     testString = (string) => {
         let {searchValue} = this.state;
         searchValue = searchValue.replace(/ +/g, ' ').toLowerCase();
@@ -92,14 +101,14 @@ class ModalWindow extends Component {
                     else resultArray.push(this.getTTree(vehicleType, modelsTree));
                 }
             default:
-                return resultArray;
+                return this.getUniqueDOM(resultArray);
         }
         /* eslint-disable */
     };
 
     getTTree = (type, modelsTree) => {
         return (
-            <ul key={type.id + type.name + Math.random()} className="root-list">
+            <ul key={type.id + type.name} className="root-list">
                 <li>Type: {type.name}</li>
                 <li>Models:</li>
                 {modelsTree}
