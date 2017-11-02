@@ -20,6 +20,7 @@ class App extends Component {
                 </header>
                 <div className="buttons">
                     <ModalWindow filter={filter}/>
+                    {/*<ModalWindow />*/}
                 </div>
             </div>
         );

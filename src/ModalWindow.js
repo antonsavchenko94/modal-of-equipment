@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import Modal from 'react-modal';
 import 'whatwg-fetch'
-import {MODELS_URL, TYPES_URL, VEHICLES_URL, VEHICLE_ID, VEHICLE_MODEL_ID, VEHICLE_TYPE_ID} from './constants'
+import {MODELS_URL, TYPES_URL, VEHICLES_URL, FILTER_PARAMS_NAMES} from './constants'
 
 class ModalWindow extends Component {
     constructor(props) {
@@ -30,88 +30,112 @@ class ModalWindow extends Component {
     }
 
     renderTypesTree = () => {
-        const {types, models, filter} = this.state;
-        if (types && models) {
-            const typesArr = [];
-            let isFiltered = false;
-            filter.forEach(paramObj => {
-                if (paramObj.hasOwnProperty(VEHICLE_TYPE_ID)) {
-                    typesArr.push(this.getTypeTree(paramObj[VEHICLE_TYPE_ID]));
-                    isFiltered = true;
-                }
-            });
-            if (!isFiltered) {
-                return this.getTypeTree()
+        const {types, models, vehicles,  filter, searchValue} = this.state;
+        if(types && models && vehicles) {
+            if (filter.length) {
+                const DOMArray = [];
+                filter.forEach(paramObj => {
+                    const dom = this.getSubTree(paramObj);
+                    if (dom) DOMArray.push(dom);
+                });
+                return DOMArray;
             }
-            return typesArr;
+            else if(!filter.length && !searchValue) {
+                return this.getAllTree();
+            } else if(searchValue) {
+                return this.getSubTree();
+            }
         }
     };
 
-    renderModelsTree = () => {
-        const {models, filter} = this.state;
-        if (models) {
-            const modelsArr = [];
-            let isFiltered = false;
-            filter.forEach(paramObj => {
-                if (paramObj.hasOwnProperty(VEHICLE_MODEL_ID)) {
-                    modelsArr.push(this.getModelTree(paramObj[VEHICLE_MODEL_ID]));
-                    isFiltered = true;
+    getSubTree = (param = {})=> {
+        const paramKey = Object.keys(param).length ? Object.keys(param)[0] : null;
+        const paramValue = Object.values(param).length ? Object.values(param)[0] : null;
+        const {types, models, vehicles, searchValue} = this.state;
+        let resultArray = [];
+        let modelsTree = [];
+        switch(true) {
+            case paramKey === FILTER_PARAMS_NAMES.typeId || !!searchValue:
+                const singleType = types.find(type => type.id === paramValue || type.name.includes(searchValue));
+                if (singleType) {
+                    const modelsOfType = models.filter(model => model.vehicleType && model.vehicleType.id === singleType.id)
+                    modelsTree = this.getModelTree(modelsOfType);
+                    if (!searchValue) return this.getTTree(singleType, modelsTree);
+                    else {
+                        resultArray.push(this.getTTree(singleType, modelsTree));
+                    }
                 }
-            });
-            if (!isFiltered) {
-                return this.getModelTree()
-            }
-            return modelsArr;
+            case paramKey === FILTER_PARAMS_NAMES.modelId:
+                const singleModel = models.filter(model => model.id === paramValue || model.name.includes(searchValue));
+                if (singleModel.length) {
+                    const typeOfModel = singleModel[0].vehicleType;
+                    modelsTree = this.getModelTree(singleModel);
+                    if (!searchValue) return this.getTTree(typeOfModel, modelsTree);
+                    else resultArray.push(this.getTTree(typeOfModel, modelsTree));
+                }
+            case paramKey === FILTER_PARAMS_NAMES.vehicleId:
+                const singleVehicle = vehicles.filter(model => model.id === paramValue);
+                if (singleVehicle.length) {
+                    const {vehicleModel} = singleVehicle[0];
+                    const {vehicleType} = vehicleModel;
+                    vehicleModel.vehicles = singleVehicle;
+                    modelsTree = this.getModelTree([vehicleModel]);
+                    if (!searchValue) return this.getTTree(vehicleType, modelsTree);
+                    else resultArray.push(this.getTTree(vehicleType, modelsTree));
+                }
+            default:
+                return resultArray;
         }
     };
 
-    renderVehiclesTree = () => {
-        const {vehicles, filter} = this.state;
-        if (vehicles) {
-            const vehiclesArr = [];
-            let isFiltered = false;
-            filter.forEach(paramObj => {
-                if (paramObj.hasOwnProperty(VEHICLE_ID)) {
-                    vehiclesArr.push(this.getVehicleTree(paramObj[VEHICLE_ID]));
-                    isFiltered = true;
-                }
-            });
-            if (!isFiltered) {
-                return this.getVehicleTree()
-            }
-            return vehiclesArr;
-        }
+    getTTree = (type, modelsTree) => {
+        return (
+            <ul key={type.id + type.name + Math.random()} className="root-list">
+                <li>Type: {type.name}</li>
+                <li>Models:</li>
+                {modelsTree}
+            </ul>);
     };
 
-    getTypeTree = id => {
-        const {types, models, searchValue} = this.state;
-        let typesForRendering = [];
-        if(!searchValue) {
-            typesForRendering = id ? types.filter(item => item.id === id) : types;
-        }
-        else {
-            typesForRendering = types.filter(item => item.name.includes(searchValue));
-        }
+    getModelTree = models => {
+        return models.map(model => {
+            const {vehicles} = model;
+            const vehiclesItem = this.getVehiclesTree(vehicles);
+            return (
+                <ul key={model.id + model.name}>
+                    <li>Model - {model.name}</li>
+                    <li>Vehicles: {vehiclesItem.length ? '' : 'Not found'}</li>
+                    <ul>{vehiclesItem}</ul>
+                </ul>
+            );
+        })
 
-        const typesTree = typesForRendering.map(item => {
+    };
+
+    getVehiclesTree = vehicles => {
+        return vehicles.map(vehicle => {
+            return (<li key={vehicle.name + vehicle.id}>{vehicle.name}</li>);
+        });
+    };
+
+    getAllTree = ()=> {
+        const {types, models} = this.state;
+        return types.map(item => {
             const modelItems = [];
             models.forEach((model, index) => {
-                const {vehicleType} = model;
-                if (vehicleType && vehicleType.id === item.id && !searchValue) {
-                    const vehicleItems = model.vehicles.map(vehicle => <li key={vehicle.id}>{vehicle.name}</li>);
-                    const modelItemKey = item.id + model.id + model.name;
-                    const modelItem = (
-                        <ul key={modelItemKey}>
-                            <li>Model: {model.name}</li>
-                            <li>Vehicles:</li>
-                            <ul>
-                                {vehicleItems.length ? vehicleItems : 'NOT EXIST'}
-                            </ul>
+                const vehicleItems = model.vehicles.map(vehicle => <li key={vehicle.id}>{vehicle.name}</li>);
+                const modelItemKey = item.id + model.id + model.name;
+                const modelItem = (
+                    <ul key={modelItemKey}>
+                        <li>Model: {model.name}</li>
+                        <li>Vehicles:</li>
+                        <ul>
+                            {vehicleItems.length ? vehicleItems : <li>NOT EXIST</li>}
                         </ul>
-                    );
-                    const hr = <hr key={modelItemKey + index}/>;
-                    modelItems.push(modelItem, hr);
-                }
+                    </ul>
+                );
+                const hr = <hr key={modelItemKey + index}/>;
+                modelItems.push(modelItem, hr);
             });
             return (
                 <ul key={item.id + item.name} className="root-list">
@@ -120,59 +144,7 @@ class ModalWindow extends Component {
                     {modelItems}
                 </ul>);
         });
-        return typesTree;
 
-    };
-
-    getModelTree = id => {
-        const {models, searchValue} = this.state;
-        let modelsForRendering = [];
-        if(!searchValue) {
-            modelsForRendering = id ? models.filter(item => item.id === id) : models;
-        }
-        else {
-            modelsForRendering = models.filter(item => item.name.includes(searchValue));
-        }
-        const modelsTree = modelsForRendering.map(model => {
-            const vehicleItems = model.vehicles.map(vehicle => <li key={model.name + vehicle.name}>{vehicle.name}</li>);
-            const {vehicleType} = model;
-
-            return (
-                <ul key={model.id + model.name} className="root-list">
-                    <li>Model: {model.name}</li>
-                    <li>Type: {vehicleType.name}</li>
-                    <li>Vehicles:</li>
-                    <ul>{vehicleItems}</ul>
-                    <hr/>
-                </ul>);
-        });
-        return modelsTree;
-
-    };
-
-    getVehicleTree = id => {
-        const {vehicles, searchValue} = this.state;
-        let vehiclesForRendering = [];
-        if(!searchValue) {
-            vehiclesForRendering = id ? vehicles.filter(item => item.id === id) : vehicles;
-        }
-        else {
-            vehiclesForRendering = vehicles.filter(item => item.name.includes(searchValue));
-        }
-        const vehiclesTree = vehiclesForRendering.map(vehicle => {
-            const {vehicleModel} = vehicle;
-            const {vehicleType} = vehicleModel;
-
-            return (
-                <ul key={vehicle.id + vehicle.name} className="root-list">
-                    <li>Vehicle name: {vehicle.name}</li>
-                    <li>Type: {vehicleType.name}</li>
-                    <li>Model: {vehicleModel.name}</li>
-                    <hr/>
-                </ul>);
-        });
-
-        return vehiclesTree;
     };
 
 
@@ -185,6 +157,7 @@ class ModalWindow extends Component {
                     isOpen={isModalOpen}
                     contentLabel="Equipment"
                     onRequestClose={this.closeModal}
+                    style={{content: {left: '25%', width: '50%'}}}
                 >
                     <form>
                         <input className="search" type="search" value={searchValue} onChange={this.onSearch} placeholder="Search.." />
@@ -193,14 +166,6 @@ class ModalWindow extends Component {
                         <div className="col">
                             <h3>Types</h3>
                             {this.renderTypesTree()}
-                        </div>
-                        <div className="col">
-                            <h3>Models</h3>
-                            {this.renderModelsTree()}
-                        </div>
-                        <div className="col">
-                            <h3>Vehicles</h3>
-                            {this.renderVehiclesTree()}
                         </div>
                     </div>
                 </Modal>
