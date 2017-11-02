@@ -25,8 +25,15 @@ class ModalWindow extends Component {
 
     closeModal = () => this.setState({isModalOpen: false});
 
+    testString = (string) => {
+        let {searchValue} = this.state;
+        searchValue = searchValue.replace(/ +/g, ' ').toLowerCase();
+        const text = string.replace(/\s+/g, ' ').toLowerCase();
+        return !!~text.indexOf(searchValue);
+    }
+
     onSearch = ({ currentTarget }) => {
-        this.setState({ searchValue: currentTarget.value.trim(), filter: [] });
+        this.setState({ searchValue: currentTarget.value, filter: [] });
     }
 
     renderTypesTree = () => {
@@ -54,11 +61,12 @@ class ModalWindow extends Component {
         const {types, models, vehicles, searchValue} = this.state;
         let resultArray = [];
         let modelsTree = [];
+        /* eslint-disable */
         switch(true) {
             case paramKey === FILTER_PARAMS_NAMES.typeId || !!searchValue:
-                const singleType = types.find(type => type.id === paramValue || type.name.includes(searchValue));
+                const singleType = types.find(type => type.id === paramValue || (searchValue && this.testString(type.name)));
                 if (singleType) {
-                    const modelsOfType = models.filter(model => model.vehicleType && model.vehicleType.id === singleType.id)
+                    const modelsOfType = models.filter(model => model.vehicleType && model.vehicleType.id === singleType.id);
                     modelsTree = this.getModelTree(modelsOfType);
                     if (!searchValue) return this.getTTree(singleType, modelsTree);
                     else {
@@ -66,7 +74,7 @@ class ModalWindow extends Component {
                     }
                 }
             case paramKey === FILTER_PARAMS_NAMES.modelId:
-                const singleModel = models.filter(model => model.id === paramValue || model.name.includes(searchValue));
+                const singleModel = models.filter(model => model.id === paramValue || (searchValue && this.testString(model.name)));
                 if (singleModel.length) {
                     const typeOfModel = singleModel[0].vehicleType;
                     modelsTree = this.getModelTree(singleModel);
@@ -74,7 +82,7 @@ class ModalWindow extends Component {
                     else resultArray.push(this.getTTree(typeOfModel, modelsTree));
                 }
             case paramKey === FILTER_PARAMS_NAMES.vehicleId:
-                const singleVehicle = vehicles.filter(model => model.id === paramValue);
+                const singleVehicle = vehicles.filter(vehicle => vehicle.id === paramValue || (searchValue && this.testString(vehicle.name)));
                 if (singleVehicle.length) {
                     const {vehicleModel} = singleVehicle[0];
                     const {vehicleType} = vehicleModel;
@@ -85,7 +93,7 @@ class ModalWindow extends Component {
                 }
             default:
                 return resultArray;
-        }
+        /* eslint-disable */
     };
 
     getTTree = (type, modelsTree) => {
