@@ -181,12 +181,8 @@ class ModalWindow extends Component {
                     <form>
                         <input className="search" type="search" value={searchValue} onChange={this.onSearch} placeholder="Search.." />
                     </form>
-                    <div className="row">
-                        <div className="col">
-                            <h3>Types</h3>
-                            {this.renderTypesTree()}
-                        </div>
-                    </div>
+                    <h3>Types</h3>
+                    {this.renderTypesTree()}
                 </Modal>
             </div>
         );
