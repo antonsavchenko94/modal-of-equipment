@@ -54,7 +54,7 @@ class ModalWindow extends Component {
                     const dom = this.getSubTree(paramObj);
                     if (dom) DOMArray.push(dom);
                 });
-                return DOMArray;
+                return this.getUniqueDOM(DOMArray);
             }
             else if(!filter.length && !searchValue) {
                 return this.getAllTree();
@@ -96,6 +96,7 @@ class ModalWindow extends Component {
                     const {vehicleModel} = singleVehicle[0];
                     const {vehicleType} = vehicleModel;
                     vehicleModel.vehicles = singleVehicle;
+                    console.log('singleVehicle = ', singleVehicle);
                     modelsTree = this.getModelTree([vehicleModel]);
                     if (!searchValue) return this.getTTree(vehicleType, modelsTree);
                     else resultArray.push(this.getTTree(vehicleType, modelsTree));
