@@ -139,26 +139,28 @@ class ModalWindow extends Component {
 
     getAllTree = ()=> {
         const {types, models} = this.state;
-        return types.map(item => {
+        return types.map(typeItem => {
             const modelItems = [];
             models.forEach((model, index) => {
-                const vehicleItems = model.vehicles.map(vehicle => <li key={vehicle.id}>{vehicle.name}</li>);
-                const modelItemKey = item.id + model.id + model.name;
-                const modelItem = (
-                    <ul key={modelItemKey}>
-                        <li>Model: {model.name}</li>
-                        <li>Vehicles:</li>
-                        <ul>
-                            {vehicleItems.length ? vehicleItems : <li>NOT EXIST</li>}
+                if(model.vehicleType && model.vehicleType.id === typeItem.id){
+                    const vehicleItems = model.vehicles.map(vehicle => <li key={vehicle.id}>{vehicle.name}</li>);
+                    const modelItemKey = typeItem.id + model.id + model.name;
+                    const modelItem = (
+                        <ul key={modelItemKey}>
+                            <li>Model: {model.name}</li>
+                            <li>Vehicles:</li>
+                            <ul>
+                                {vehicleItems.length ? vehicleItems : <li>NOT EXIST</li>}
+                            </ul>
                         </ul>
-                    </ul>
-                );
-                const hr = <hr key={modelItemKey + index}/>;
-                modelItems.push(modelItem, hr);
+                    );
+                    const hr = <hr key={modelItemKey + index}/>;
+                    modelItems.push(modelItem, hr);
+                }
             });
             return (
-                <ul key={item.id + item.name} className="root-list">
-                    <li>Type: {item.name}</li>
+                <ul key={typeItem.id + typeItem.name} className="root-list">
+                    <li>Type: {typeItem.name}</li>
                     <li>Models</li>
                     {modelItems}
                 </ul>);
